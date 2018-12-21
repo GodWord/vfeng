@@ -8,9 +8,9 @@ SITES = [
     'http://www.sztu.edu.cn/mobile',
 ]
 # 设置需要保存的位置，注意\要换成/或者\\
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-RESULT_PATH = os.path.join(BASE_DIR, 'result/keyword_search')
+
+RESULT_PATH = '.result'
 RESULT_FILENAME = 'urls.csv'
 
 # 设置要抓取的网站范围
