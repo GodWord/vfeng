@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="utf-8">
+<head>
+    <title>math.js | plot</title>
+    <script src="./static/js/math.min.js"></script>
+
+    <script src="./static/js/plotly-1.35.2.min.js"></script>
+
+    <style>
+        input[type=text] {
+            width: 300px;
+        }
+
+        input {
+            padding: 6px;
+        }
+
+        body, html, input {
+            font-family: sans-serif;
+            font-size: 11pt;
+
+        }
+
+        form {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<form id="form">
+    <div id="main">
+        Qd:
+        <input type="text" id="eq" value="-0.01x+4.0228" disabled="disabled"/>
+        <input id="range_qd_angle" type="range" min="0" max="180" value="0" oninput="draw()"/>
+        <input id="range_qd_translation" type="range" min="-100" max="100" value="0" oninput="draw()"/>
+        <br>
+        Qs:
+        <input type="text" id="eq2" value="0.01x-1.0228" disabled="disabled"/>
+        <input id="range_qs_angle" type="range" min="0" max="180" value="0" oninput="draw()"/>
+        <input id="range_qs_translation" type="range" min="-100" max="100" value="0" oninput="draw()"/>
+        <br>
+        <br>
+        intersection:<input id="intersection" style="width:400px" disabled="disabled">
+    </div>
+</form>
+
+<div id="plot" style="width:1200px;height:900px; "></div>
+
+
+<script>
+    function draw() {
+        try {
+            // compile the expression once
+            let expression = document.getElementById('eq').value;
+            let expression2 = document.getElementById('eq2').value;
+            const qd_angle = document.getElementById('range_qd_angle').value;
+            const qd_translation = document.getElementById('range_qd_translation').value;
+            const qs_angle = document.getElementById('range_qs_angle').value;
+            const qs_translation = document.getElementById('range_qs_translation').value;
+
+            let expr = math.compile(expression);
+            let expr2 = math.compile(expression2);
+            if (qd_translation !== 0) {
+                let qs_b = eval(expression.replace(expression.match("[\\-|+|0-9][\\.0-9]*x"), ''));
+                qs_b = qs_b + Number(qd_translation);
+                if (qs_b >= 0) {
+                    qs_b = '+' + qs_b
+                }
+                let qd = expression.match("[\\-|+|0-9][\\.0-9]*x")[0] + qs_b;
+                expr = math.compile(qd);
+
+            }
+            if (Number(qd_angle) !== 0) {
+                let qd_b = eval(expression2.replace(expression2.match("[\\-|+|0-9][\\.0-9]*x"), ''));
+                qd_b = qd_b + Number(qd_translation);
+                if (qd_b >= 0) {
+                    qd_b = '+' + qd_b
+                }
+                let a_expression = getAngle(expression.match("[\-|+|0-9][\.0-9]*x")[0], qd_angle) + 'x' + qd_b;
+                expr = math.compile(a_expression);
+            } else if (isNaN(qd_angle)) {
+                alert("请输入整数");
+            }
+
+            if (qs_translation !== 0) {
+                let qs_b = eval(expression2.replace(expression2.match("[\\-|+|0-9][\\.0-9]*x"), ''));
+                qs_b = qs_b + Number(qs_translation);
+                if (qs_b >= 0) {
+                    qs_b = '+' + qs_b
+                }
+                expr2 = math.compile(expression2.match("[\\-|+|0-9][\\.0-9]*x")[0] + qs_b);
+            }
+
+
+            if (Number(qs_angle) !== 0) {
+                let qs_b = eval(expression2.replace(expression2.match("[\\-|+|0-9][\\.0-9]*x"), ''));
+                qs_b = qs_b + Number(qs_translation);
+                if (qs_b >= 0) {
+                    qs_b = '+' + qs_b
+                }
+                let a_expression2 = getAngle(expression2.match("[\-|+|0-9][\.0-9]*x")[0], qs_angle) + 'x' + qs_b;
+                expr2 = math.compile(a_expression2);
+            } else if (isNaN(qs_angle)) {
+                alert("请输入整数");
+            }
+            // evaluate the expression repeatedly for different values of x
+            const xValues = math.range(-2500, 2500, 50).toArray();
+            const yValues = xValues.map(function (x) {
+                return expr.eval({x: x})
+            });
+            const xValues2 = math.range(-2500, 2500, 50).toArray();
+            const yValues2 = xValues2.map(function (x) {
+                return expr2.eval({x: x})
+            });
+            let k1 = (yValues[1] - yValues[0]) * 1.0 / (xValues[1] - xValues[0]);
+            let b1 = yValues[0] * 1.0 - xValues[0] * k1 * 1.0
+            let b2 = 0;
+            let k2 = null;
+            if (xValues2[1] - xValues2[2] === 0) {
+                k1 = null;
+            } else {
+                k2 = (yValues2[1] - yValues2[0]) * 1.0 / (xValues2[1] - xValues2[0]);
+                b2 = yValues2[0] * 1.0 - xValues2[0] * k2 * 1.0
+            }
+            let res_x = 0;
+            if (k2 == null) {
+                res_x = xValues2[0];
+            } else {
+                res_x = (b2 - b1) * 1.0 / (k1 - k2);
+            }
+            let res_y = k1 * res_x * 1.0 + b1 * 1.0
+            document.getElementById('intersection').value = res_x + ',' + res_y;
+            let trace1 = {
+                x: [res_x],
+                y: [res_y],
+                mode: 'markers',
+                name: 'intersection',
+                text: '[' + res_x + ", " + res_y + "]",
+                marker: {
+                    color: 'rgb(219, 64, 82)',
+                    size: 20
+
+                }
+            };
+            const qs = {
+                x: xValues,
+                y: yValues,
+                name: 'Qd',
+                type: 'line'
+            };
+            const qd = {
+                x: xValues2,
+                y: yValues2,
+                name: 'Qs',
+                type: 'line'
+            };
+
+            let layout = {
+                title: 'Bottle Water Supply and Demand Relationship',
+                xaxis: {
+                    title: 'Bottle',
+                    titlefont: {
+                        family: 'Courier New, monospace',
+                        size: 18,
+                        color: '#7f7f7f'
+                    }
+                },
+                yaxis: {
+
+                    title: 'Price',
+                    titlefont: {
+                        family: 'Courier New, monospace',
+                        size: 18,
+                        color: '#7f7f7f'
+                    }
+                }
+            };
+            const data = [qs, qd, trace1];
+            Plotly.newPlot('plot', data, layout)
+        } catch (err) {
+            console.error(err);
+            alert(err)
+        }
+    }
+
+    function getAngle(k, num) {
+        k = k.split("x")[0];
+        if (k === "-") {
+            k = -1
+        }
+        let b_angle = Math.atan(Number(k)) / (Math.PI / 180);
+
+        let a_angle = 0;
+        if (Number(num) > 0) {
+            a_angle = (Number(b_angle) - Number(num)) / 180 * Math.PI;
+        } else if (Number(num) < 0) {
+            a_angle = (Number(b_angle) + Number(num)) / 180 * Math.PI;
+        }
+        return Math.tan(a_angle);
+    }
+
+    document.getElementById('form').onsubmit = function (event) {
+        event.preventDefault();
+        draw()
+    };
+
+    draw()
+</script>
+
+</body>
+</html>
