@@ -20,7 +20,7 @@ NET_LOCATIONS = ['sztu.edu.cn']
 MAX_DEPTH = 4
 
 # 设置的关键字或关键词列表
-KEYWORDS = [u'大学']
+KEYWORDS = [u'截止2025年']
 
 # 抓取网页前等待多少秒
 WAIT_TIME = 1
