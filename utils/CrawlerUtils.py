@@ -1,4 +1,8 @@
 # -*- coding:utf-8 -*
+import logging
+
+logger = logging.getLogger('utils')
+
 
 class CrawlerUtils(object):
     @staticmethod
@@ -166,3 +170,31 @@ class CrawlerUtils(object):
         cur.execute(sql)
         res = cur.fetchall()
         return res
+
+    @staticmethod
+    def get_proxies(api_url):
+        import json
+        import requests
+        import os
+
+        # 代理服务器
+        logger.info('[%d]开始获取代理IP' % (os.getpid(),))
+        data = json.loads(requests.get(api_url).content)
+        if data['success'] == False:
+            logger.error('代理出现错误:%s' % (data['msg'],))
+            return None
+        proxy_host = data['data'][0]['ip']
+        proxy_port = data['data'][0]['port']
+        expire_time = data['data'][0]['expire_time']
+        proxy_meta = "http://%(host)s:%(port)s" % {
+
+            "host": proxy_host,
+            "port": proxy_port,
+        }
+        proxies = {
+
+            "http": proxy_meta,
+            "https": proxy_meta,
+        }
+        logger.info('[%d]获取代理IP成功,[%s],过期时间[%s]' % (os.getpid(), str(proxies), expire_time))
+        return proxies
